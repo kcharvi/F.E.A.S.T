@@ -1,6 +1,6 @@
 # F.E.A.S.T - Food & Ingredient AI Suggestion Technology
 
-![Eyes_on_Eats_Poster](https://github.com/REDDITARUN/F.E.A.S.T/assets/53268025/f0517fd7-2a46-4eb5-8599-5b00b6d63091)
+![Eyes_on_Eats_Poster](assets/Eyes_on_Eats_Poster.jpg)
 
 ## Team Members
 
