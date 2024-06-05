@@ -30,7 +30,7 @@ From a consumer's perspective, FEAST offers several advantages:
 
 ## General Overview of the Project
 
-<img width="1963" alt="Project_Pipeline" src="assets/Eyes_on_Eats_Poster.jpg">
+<img width="1963" alt="Project_Pipeline"  src="assets/Eyes_on_Eats_Poster.jpg">
 
 FEAST integrates object detection and text generation to create a seamless user experience:
 
@@ -99,14 +99,11 @@ The locally deployed application, developed using Streamlit, allows users to upl
 
 ![Untitled video - Made with Clipchamp](https://github.com/REDDITARUN/F.E.A.S.T/assets/53268025/507c7983-44eb-491a-9a21-cc354dd6651f)
 
-
 > Extented to structure the recipe and get nutritional value of the food.
 
 ![image](https://github.com/REDDITARUN/F.E.A.S.T/assets/53268025/7fec1299-4cd7-40fa-9903-0e29eed7abe8)
 ![image](https://github.com/REDDITARUN/F.E.A.S.T/assets/53268025/d885eabf-1831-4fac-a80a-a197263c33c0)
 ![image](https://github.com/REDDITARUN/F.E.A.S.T/assets/53268025/8e4c6169-8a0e-4c87-a585-7e8088d0962d)
-
-
 
 ## References
 
