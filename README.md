@@ -30,7 +30,7 @@ From a consumer's perspective, FEAST offers several advantages:
 
 ## General Overview of the Project
 
-<img width="1963" alt="Project_Pipeline" src="https://github.com/REDDITARUN/F.E.A.S.T/assets/53268025/17fdca8e-2e0e-411a-9cef-63e2499df06b">
+<img width="1963" alt="Project_Pipeline" src="assets/Eyes_on_Eats_Poster.jpg">
 
 FEAST integrates object detection and text generation to create a seamless user experience:
 
