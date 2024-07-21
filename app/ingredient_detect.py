@@ -20,7 +20,7 @@ print(available_classes)
 sys.path.append(os.path.abspath('yolov7'))
 
 model_path ="best.pt"
-hugging_face_token=os.getenv('HUGGING_FACE_TOKEN')
+hugging_face_token="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"
 
 def load_yolo_model():
     from models.experimental import attempt_load
