@@ -204,26 +204,60 @@ def get_nutritional_values(ingredients):
 
 
 def main():
-    st.set_option("deprecation.showfileUploaderEncoding", False)
-    st.title("F.E.A.S.T - Food & Ingredient AI Suggestion Technology")
-    st.subheader("What's in Your Kitchen? Let's Create a Dish")
-    poster_path = "Eyes_on_Eats_Poster.jpg"
-    st.image(poster_path, caption="EYES ON EATS", use_column_width=True)
-    
-    st.write("MODEL: Object Detection using YOLO")
+    try:
+        st.set_option("deprecation.showfileUploaderEncoding", False)
+        st.title("F.E.A.S.T - Food & Ingredient AI Suggestion Technology")
+        st.subheader("What's in Your Kitchen? Let's Create a Dish")
+        poster_path = "Eyes_on_Eats_Poster.jpg"
+        st.image(poster_path, caption="EYES ON EATS", use_column_width=True)
+        
+        st.write("MODEL: Object Detection using YOLO")
 
-    model = load_model(model_path)
-    class_labels = load_class_labels("Final_classes.txt")
-    upload_option = st.radio("Upload Image Option:", ("Upload from File", "Capture from Camera", "Try from Sample Images"))
+        model = load_model(model_path)
+        class_labels = load_class_labels("Final_classes.txt")
+        upload_option = st.radio("Upload Image Option:", ("Upload from File", "Capture from Camera", "Try from Sample Images"))
 
-    ingredients = []  # List to store detected ingredients
-    
-    if upload_option == "Upload from File":
-        uploaded_file = st.file_uploader("Upload an image of the ingredients", type=["jpg", "jpeg"])
-        if uploaded_file is not None:
+        ingredients = []  # List to store detected ingredients
+        
+        if upload_option == "Upload from File":
+            uploaded_file = st.file_uploader("Upload an image of the ingredients", type=["jpg", "jpeg"])
+            if uploaded_file is not None:
+                try:
+                    image = Image.open(uploaded_file)
+                    st.image(image, caption="Uploaded Image", use_column_width=True)
+                    predictions = detect_ingredients(image, model)
+                    new_ingredients = parse_predictions(predictions, class_labels)
+                    st.write("Predicted Ingredients:", new_ingredients)
+                    ingredients += new_ingredients  # Append new ingredients to the existing list
+
+                    ingredients_string = ", ".join(new_ingredients)
+
+                    generate_recipe_button = st.button("Generate Recipe", key="generate_recipe")
+                    if generate_recipe_button:
+                        st.write("Loading Recipe...")
+                        generated_recipes = generation_function(ingredients_string)
+                        st.header("Generated Recipe:")
+                        for recipe_text in generated_recipes:
+                            print_recipe(recipe_text)
+                        st.write("----------------------------------------------------------------------------------------------------------------------------------")
+                    
+                    nutrition_recipe_button = st.button("Get Nutritional Content", key="nutritional_value")
+                    if nutrition_recipe_button:
+                        nutritional_info = get_nutritional_values(", ".join(new_ingredients))
+                        if nutritional_info is not None:
+                            st.write("Nutritional Values:")
+                            st.write(nutritional_info)
+                        else:
+                            st.error("Failed to retrieve nutritional values.")
+                
+                except Exception as e:
+                    st.error(f"Error processing the recipe: {str(e)}")
+
+        elif upload_option == "Try from Sample Images":
+            sample_image_path = "sample_image_1.jpg"  # Update with the correct path to your sample image
             try:
-                image = Image.open(uploaded_file)
-                st.image(image, caption="Uploaded Image", use_column_width=True)
+                image = Image.open(sample_image_path)
+                st.image(image, caption="Sample Image", use_column_width=True)
                 predictions = detect_ingredients(image, model)
                 new_ingredients = parse_predictions(predictions, class_labels)
                 st.write("Predicted Ingredients:", new_ingredients)
@@ -250,66 +284,35 @@ def main():
                         st.error("Failed to retrieve nutritional values.")
             
             except Exception as e:
-                st.error(f"Error processing the recipe: {str(e)}")
+                st.error(f"Error processing the sample image: {str(e)}")
 
-    elif upload_option == "Try from Sample Images":
-        sample_image_path = "sample_image_1.jpg"  # Update with the correct path to your sample image
-        try:
-            image = Image.open(sample_image_path)
-            st.image(image, caption="Sample Image", use_column_width=True)
-            predictions = detect_ingredients(image, model)
-            new_ingredients = parse_predictions(predictions, class_labels)
-            st.write("Predicted Ingredients:", new_ingredients)
-            ingredients += new_ingredients  # Append new ingredients to the existing list
+        else:
+            st.write("Please allow access to your camera.")
+            camera = cv2.VideoCapture(0)
+            if st.button("Capture Image"):
+                st.write("Get ready to take a snap!")
+                time.sleep(3)  # Add a delay of 3 seconds
+                _, frame = camera.read()
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                image = Image.fromarray(frame)
+                st.image(image, caption="Captured Image", use_column_width=True)
+                
+                predictions = detect_ingredients(image, model)
+                new_ingredients = parse_predictions(predictions, class_labels)
 
-            ingredients_string = ", ".join(new_ingredients)
-
-            generate_recipe_button = st.button("Generate Recipe", key="generate_recipe")
-            if generate_recipe_button:
-                st.write("Loading Recipe...")
-                generated_recipes = generation_function(ingredients_string)
-                st.header("Generated Recipe:")
-                for recipe_text in generated_recipes:
-                    print_recipe(recipe_text)
-                st.write("----------------------------------------------------------------------------------------------------------------------------------")
-            
-            nutrition_recipe_button = st.button("Get Nutritional Content", key="nutritional_value")
-            if nutrition_recipe_button:
-                nutritional_info = get_nutritional_values(", ".join(new_ingredients))
-                if nutritional_info is not None:
-                    st.write("Nutritional Values:")
-                    st.write(nutritional_info)
-                else:
-                    st.error("Failed to retrieve nutritional values.")
-        
-        except Exception as e:
-            st.error(f"Error processing the sample image: {str(e)}")
-
-    else:
-        st.write("Please allow access to your camera.")
-        camera = cv2.VideoCapture(0)
-        if st.button("Capture Image"):
-            st.write("Get ready to take a snap!")
-            time.sleep(3)  # Add a delay of 3 seconds
-            _, frame = camera.read()
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            image = Image.fromarray(frame)
-            st.image(image, caption="Captured Image", use_column_width=True)
-            
-            predictions = detect_ingredients(image, model)
-            new_ingredients = parse_predictions(predictions, class_labels)
-
-            st.write("Predicted Ingredients:", new_ingredients)
-            ingredients += new_ingredients  # Append new ingredients to the existing list
-            
-            generate_recipe_button = st.button("Generate Recipe", key="generate_recipe")
-            if generate_recipe_button:
-                st.write("Loading Recipe...")
-                recipe = generation_function(ingredients)
-                st.header("Generated Recipe:")
-                st.write(recipe)
-            
-    st.markdown("**Made by: Tarun and Charvi**")  
+                st.write("Predicted Ingredients:", new_ingredients)
+                ingredients += new_ingredients  # Append new ingredients to the existing list
+                
+                generate_recipe_button = st.button("Generate Recipe", key="generate_recipe")
+                if generate_recipe_button:
+                    st.write("Loading Recipe...")
+                    recipe = generation_function(ingredients)
+                    st.header("Generated Recipe:")
+                    st.write(recipe)
+                
+        st.markdown("**Made by: Tarun and Charvi**")  
+    except Exception as e:
+        st.error(f"Error in main: {e}")
 
 if __name__ == '__main__':
     main()
