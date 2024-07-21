@@ -1,6 +1,3 @@
-from dotenv import load_dotenv
-load_dotenv()
-
 import streamlit as st
 import cv2
 import numpy as np
@@ -20,7 +17,7 @@ print(available_classes)
 sys.path.append(os.path.abspath('yolov7'))
 
 model_path ="best.pt"
-hugging_face_token=os.getenv('HUGGING_FACE_TOKEN')
+hugging_face_token = st.secrets["general"]["HUGGING_FACE_TOKEN"]
 
 def load_yolo_model():
     from models.experimental import attempt_load
