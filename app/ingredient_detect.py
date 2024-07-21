@@ -19,6 +19,14 @@ sys.path.append(os.path.abspath('yolov7'))
 model_path ="best.pt"
 hugging_face_token = st.secrets["general"]["HUGGING_FACE_TOKEN"]
 
+# Get the Hugging Face token from secrets
+try:
+    hugging_face_token = st.secrets["general"]["HUGGING_FACE_TOKEN"]
+    st.write("Hugging Face token loaded successfully.")
+except Exception as e:
+    st.error(f"Failed to load Hugging Face token: {e}")
+
+
 def load_yolo_model():
     from models.experimental import attempt_load
     return attempt_load
