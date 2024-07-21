@@ -6,3 +6,6 @@ Pillow
 transformers
 requests
 python-dotenv
+flax
+jax
+jaxlib
