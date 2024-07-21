@@ -1,9 +1,8 @@
 streamlit
+opencv-python-headless
 torch
 torchvision
-pillow
+Pillow
 transformers
 requests
-numpy
-opencv-python-headless
 python-dotenv
