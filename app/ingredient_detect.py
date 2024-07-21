@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 import streamlit as st
 import cv2
 import numpy as np
@@ -9,14 +12,21 @@ import sys
 from transformers import FlaxAutoModelForSeq2SeqLM, AutoTokenizer
 import time
 import requests
+import os
 
-sys.path.append("F:\\Desktop\\DL\\Project\\bhanucha_charviku_final_project\\bhanucha_charviku_final\\application\\yolov7") 
-from models.experimental import attempt_load 
+from transformers import __all__ as available_classes
+print(available_classes)
 
-model_path ="F:\\Desktop\\DL\\Project\\bhanucha_charviku_final_project\\bhanucha_charviku_final\\application\\best.pt"
-API_TOKEN="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"
+sys.path.append(os.path.abspath('yolov7'))
 
-# RECIPE GENERATION METHODS
+model_path ="best.pt"
+hugging_face_token=os.getenv('HUGGING_FACE_TOKEN')
+
+def load_yolo_model():
+    from models.experimental import attempt_load
+    return attempt_load
+
+###################### RECIPE GENERATION METHODS ######################
 MODEL_NAME_OR_PATH = "flax-community/t5-recipe-generation"
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_OR_PATH, use_fast=True)
 model = FlaxAutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME_OR_PATH)
@@ -90,12 +100,13 @@ def print_recipe(recipe_text):
                 st.write(info)
     
     st.write("-" * 130)
-# RECIPE GENERATION METHODS
+###################### RECIPE GENERATION METHODS ######################
 
-# OBJECT DETCTION METHODS
+###################### OBJECT DETCTION METHODS ######################
 @st.cache_data
 def load_model(model_path):
     device = torch.device('cpu') 
+    attempt_load = load_yolo_model()
     model = attempt_load(model_path, map_location=device)
     model.eval()
     return model
@@ -126,12 +137,12 @@ def parse_predictions(predictions, class_labels, threshold=0.1):
             class_probs = prediction[5:]  
             class_id = class_probs.argmax()  
             class_confidence = class_probs[class_id]
-            # print("Class ID:", class_id)
-            # print("Class Confidence:", class_confidence)
-            # print("Raw Prediction:", prediction)
+            print("Class ID:", class_id)
+            print("Class Confidence:", class_confidence)
+            print("Raw Prediction:", prediction)
             if class_confidence > threshold:
                 ingredient = class_labels.get(int(class_id), "Unknown")
-                # print("Detected Ingredient:", ingredient)
+                print("Detected Ingredient:", ingredient)
                 if ingredient not in detected_ingredients:
                     detected_ingredients.append(ingredient)
 
@@ -144,39 +155,61 @@ def load_class_labels(filepath):
         for idx, line in enumerate(file):
             class_labels[idx] = line.strip()
     return class_labels
-# OBJECT DETCTION METHODS
+###################### OBJECT DETCTION METHODS ######################
 
-# NUTRITIONAL VALUE
+###################### NUTRITIONAL VALUE ######################
 def get_nutritional_values(ingredients):
-    print("INGred: ", ingredients)
-    url = "https://api-inference.huggingface.co/models/sgarbi/bert-fda-nutrition-ner"
-    headers = {"Authorization": "Bearer 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"}
-    payload = {
-        "inputs": ingredients
-    }
-    print("PAYLoad: ",payload)
-    response = requests.post(url, json=payload, headers=headers)
-    print("RESPONSE: ",response)
-
-    if response.status_code == 200:
-        return response.json()
-    else:
-        print()
+    hugging_face_token = os.getenv('HUGGING_FACE_TOKEN')
+    if not hugging_face_token:
+        print("Hugging Face token is missing.")
         return None
-#NUTRITIONAL VALUE
+
+    print("Ingredients: ", ingredients)
+    url = "https://api-inference.huggingface.co/models/sgarbi/bert-fda-nutrition-ner"
+    headers = {"Authorization": f"Bearer {hugging_face_token}"}
+    payload = {
+        "inputs": ["Here are the ingredients to use: " + ingredients]
+    }
+    print("Payload: ", payload)
+
+    max_retries = 5
+    retry_delay = 20  # seconds
+
+    for attempt in range(max_retries):
+        response = requests.post(url, json=payload, headers=headers)
+        print("Response Status Code: ", response.status_code)
+        print("Response Content: ", response.content)
+
+        if response.status_code == 200:
+            return response.json()
+        elif response.status_code == 503:
+            print(f"Model is loading. Retrying in {retry_delay} seconds...")
+            time.sleep(retry_delay)
+        else:
+            try:
+                error_detail = response.json()
+            except ValueError:
+                error_detail = response.content
+            print(f"Error: {response.status_code}, {error_detail}")
+            return None
+
+    print("Max retries reached. Failed to retrieve nutritional values.")
+    return None
+###################### NUTRITIONAL VALUE ######################
 
 
 def main():
     st.set_option("deprecation.showfileUploaderEncoding", False)
-    st.title("CSE 676: Deep Learning")
-    st.header("EYES ON EATS: From Image to Formula")
-    st.header("Snap, Cook, Enjoy: Satisfy Your Cravings!")
-    st.write("What's in Your Kitchen? Let's Create a Dish")
+    st.title("F.E.A.S.T - Food & Ingredient AI Suggestion Technology")
+    st.subheader("What's in Your Kitchen? Let's Create a Dish")
+    poster_path = "Eyes_on_Eats_Poster.jpg"
+    st.image(poster_path, caption="EYES ON EATS", use_column_width=True)
+    
     st.write("MODEL: Object Detection using YOLO")
 
     model = load_model(model_path)
-    class_labels = load_class_labels("F:\\Desktop\\DL\\Project\\bhanucha_charviku_final_project\\bhanucha_charviku_final\\application\\Final_classes.txt")
-    upload_option = st.radio("Upload Image Option:", ("Upload from File", "Capture from Camera"))
+    class_labels = load_class_labels("Final_classes.txt")
+    upload_option = st.radio("Upload Image Option:", ("Upload from File", "Capture from Camera", "Try from Sample Images"))
 
     ingredients = []  # List to store detected ingredients
     
@@ -188,11 +221,8 @@ def main():
                 st.image(image, caption="Uploaded Image", use_column_width=True)
                 predictions = detect_ingredients(image, model)
                 new_ingredients = parse_predictions(predictions, class_labels)
-                print("detected ingredients: ", new_ingredients)
                 st.write("Predicted Ingredients:", new_ingredients)
-                print("NEW INGREDIENTS:", new_ingredients)
                 ingredients += new_ingredients  # Append new ingredients to the existing list
-                print("INGREDIENTS STORED: ", ingredients)
 
                 ingredients_string = ", ".join(new_ingredients)
 
@@ -205,7 +235,6 @@ def main():
                         print_recipe(recipe_text)
                     st.write("----------------------------------------------------------------------------------------------------------------------------------")
                 
-                # Retrieve nutritional values
                 nutrition_recipe_button = st.button("Get Nutritional Content", key="nutritional_value")
                 if nutrition_recipe_button:
                     nutritional_info = get_nutritional_values(", ".join(new_ingredients))
@@ -215,9 +244,42 @@ def main():
                     else:
                         st.error("Failed to retrieve nutritional values.")
             
-                
             except Exception as e:
                 st.error(f"Error processing the recipe: {str(e)}")
+
+    elif upload_option == "Try from Sample Images":
+        sample_image_path = "sample_image_1.jpg"  # Update with the correct path to your sample image
+        try:
+            image = Image.open(sample_image_path)
+            st.image(image, caption="Sample Image", use_column_width=True)
+            predictions = detect_ingredients(image, model)
+            new_ingredients = parse_predictions(predictions, class_labels)
+            st.write("Predicted Ingredients:", new_ingredients)
+            ingredients += new_ingredients  # Append new ingredients to the existing list
+
+            ingredients_string = ", ".join(new_ingredients)
+
+            generate_recipe_button = st.button("Generate Recipe", key="generate_recipe")
+            if generate_recipe_button:
+                st.write("Loading Recipe...")
+                generated_recipes = generation_function(ingredients_string)
+                st.header("Generated Recipe:")
+                for recipe_text in generated_recipes:
+                    print_recipe(recipe_text)
+                st.write("----------------------------------------------------------------------------------------------------------------------------------")
+            
+            nutrition_recipe_button = st.button("Get Nutritional Content", key="nutritional_value")
+            if nutrition_recipe_button:
+                nutritional_info = get_nutritional_values(", ".join(new_ingredients))
+                if nutritional_info is not None:
+                    st.write("Nutritional Values:")
+                    st.write(nutritional_info)
+                else:
+                    st.error("Failed to retrieve nutritional values.")
+        
+        except Exception as e:
+            st.error(f"Error processing the sample image: {str(e)}")
+
     else:
         st.write("Please allow access to your camera.")
         camera = cv2.VideoCapture(0)
